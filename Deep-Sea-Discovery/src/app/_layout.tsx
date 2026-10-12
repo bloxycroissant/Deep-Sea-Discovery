@@ -9,9 +9,15 @@ export default function RootLayout() {
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: '#0B192C' },
+          animation: 'fade', // Smooth transition between screens
+          animationDuration: 350,
+          contentStyle: { backgroundColor: '#0B192C', zIndex: 1 },
         }}
-      />
+      >
+        <Stack.Screen name="index" options={{ animation: 'fade' }} />
+        <Stack.Screen name="login" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="signup" options={{ animation: 'slide_from_right' }} />
+      </Stack>
     </GestureHandlerRootView>
   );
 }

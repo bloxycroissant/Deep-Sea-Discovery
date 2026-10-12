@@ -1,38 +1,36 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import React, { useEffect, useMemo, useCallback } from 'react';
+import { StyleSheet, Text, View, ScrollView, Image, TouchableOpacity, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useMemo } from 'react';
-import { Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import Animated, {
-  Easing,
-  Extrapolation,
-  interpolate,
-  runOnJS,
-  useAnimatedStyle,
-  useSharedValue,
-  withDelay,
-  withRepeat,
-  withSequence,
-  withSpring,
-  withTiming,
-} from 'react-native-reanimated';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Svg, { Circle } from 'react-native-svg';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+  withSequence,
+  withDelay,
+  withSpring,
+  Easing,
+  runOnJS,
+  interpolate,
+  Extrapolation,
+} from 'react-native-reanimated';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const BUBBLE_COUNT = 30;
-const MIN_RADIUS = 12;
-const MAX_RADIUS = 22;
-const MIN_SPEED = 7000;
+const MIN_RADIUS = 6;
+const MAX_RADIUS = 24;
+const MIN_SPEED = 6000;
 const MAX_SPEED = 14000;
 
 const getRandomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
-const getRandomX = () => Math.random() * (SCREEN_WIDTH - 40);
+const getRandomX = () => Math.random() * SCREEN_WIDTH;
 
-// Base64 Audio URI - Plays natively without requiring any missing native modules
 const BUBBLE_POP_DATA_URI = 'data:audio/wav;base64,UklGRmAGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFb3WFiYmKjIuMi4uLioqKi4uLioqLioqKiYqJioqJiomKioqJioqJioqJioqJioqJiomJi4mJ';
 
-// Synthesized / URI Pop sound player (100% fail-safe)
 function playPopSound() {
   try {
     if (typeof window !== 'undefined') {
@@ -61,12 +59,10 @@ function playPopSound() {
         return;
       }
 
-      // Web HTML5 Audio Fallback
       const audio = new window.Audio(BUBBLE_POP_DATA_URI);
       audio.play().catch(() => {});
     }
   } catch (error) {
-    // Fail-safe protection
   }
 }
 
@@ -75,36 +71,46 @@ const Bubble = React.memo(({ id, onPop }: { id: number, onPop: (id: number) => v
     radius: getRandomInRange(MIN_RADIUS, MAX_RADIUS),
     initialX: getRandomX(),
     duration: getRandomInRange(MIN_SPEED, MAX_SPEED),
-    delay: Math.random() * 4000,
+    initialProgress: Math.random(),
     driftRange: getRandomInRange(15, 35),
     driftSpeed: getRandomInRange(3000, 6000),
   }), []);
 
-  const progress = useSharedValue(0);
+  const progress = useSharedValue(config.initialProgress);
   const popScale = useSharedValue(1);
   const isPopping = useSharedValue(false);
 
-  const startFloatingAnimation = useCallback((initialDelay = 0) => {
-    progress.value = 0;
+  const startFloatingAnimation = useCallback(() => {
     popScale.value = 1;
     isPopping.value = false;
-    progress.value = withDelay(
-      initialDelay,
-      withRepeat(
-        withTiming(1, { duration: config.duration, easing: Easing.linear }),
-        -1,
-        false
-      )
-    );
+    
+    const remainingTime = (1 - progress.value) * config.duration;
+    progress.value = withTiming(1, { duration: remainingTime, easing: Easing.linear }, (finished) => {
+      if (finished) {
+        progress.value = 0;
+        progress.value = withRepeat(
+          withTiming(1, { duration: config.duration, easing: Easing.linear }),
+          -1,
+          false
+        );
+      }
+    });
   }, [config.duration]);
 
   const handleFinishPop = useCallback(() => {
-    startFloatingAnimation(0);
+    progress.value = 0;
+    popScale.value = 1;
+    isPopping.value = false;
+    progress.value = withRepeat(
+      withTiming(1, { duration: config.duration, easing: Easing.linear }),
+      -1,
+      false
+    );
     if (onPop) onPop(id);
-  }, [id, onPop, startFloatingAnimation]);
+  }, [id, config.duration, onPop]);
 
   useEffect(() => {
-    startFloatingAnimation(config.delay);
+    startFloatingAnimation();
   }, []);
 
   const handlePress = () => {
@@ -127,7 +133,7 @@ const Bubble = React.memo(({ id, onPop }: { id: number, onPop: (id: number) => v
     const translateY = interpolate(
       progress.value,
       [0, 1],
-      [SCREEN_HEIGHT + 20, -100],
+      [SCREEN_HEIGHT + 30, -80],
       Extrapolation.CLAMP
     );
 
@@ -143,11 +149,6 @@ const Bubble = React.memo(({ id, onPop }: { id: number, onPop: (id: number) => v
 
   const popStyle = useAnimatedStyle(() => ({
     transform: [{ scale: popScale.value }],
-    opacity: interpolate(
-      progress.value, 
-      [0, 0.05, 0.9, 1], 
-      [0, 0.6, 0.6, 0]
-    )
   }));
 
   return (
@@ -171,14 +172,14 @@ const Bubble = React.memo(({ id, onPop }: { id: number, onPop: (id: number) => v
               cy={config.radius}
               r={config.radius}
               fill="#E0F7FA"
-              fillOpacity={0.4}
+              fillOpacity={0.45}
             />
             <Circle
               cx={config.radius * 0.7}
               cy={config.radius * 0.7}
               r={config.radius * 0.3}
               fill="#FFFFFF"
-              fillOpacity={0.7}
+              fillOpacity={0.75}
             />
           </Svg>
         </Animated.View>
@@ -230,86 +231,87 @@ export default function WelcomeScreen() {
 
   return (
     <LinearGradient colors={['#071321', '#112238', '#1A365D']} style={styles.container}>
-      {/* Background Bubbles Layer (Strictly zIndex: 1 behind UI) */}
       <View style={styles.bubbleLayer} pointerEvents="box-none">
         {bubbleComponents}
       </View>
 
-      {/* Foreground Interactive Content Layer (Strictly zIndex: 10 in front) */}
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent} 
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.heroRow}>
-          <Animated.View style={octopusStyle}>
-            <Image source={require('../../assets/Deep-Sea-Discovery (Assets)/Octopus Icon.png')} style={styles.sideIcon} resizeMode="contain" />
+      <View style={styles.foregroundLayer} pointerEvents="box-none">
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent} 
+          showsVerticalScrollIndicator={false}
+          pointerEvents="box-none"
+        >
+          <View style={styles.heroRow}>
+            <Animated.View style={octopusStyle}>
+              <Image source={require('../../assets/Deep-Sea-Discovery (Assets)/Octopus Icon.png')} style={styles.sideIcon} resizeMode="contain" />
+            </Animated.View>
+
+            <View style={styles.mainBadgeContainer}>
+              <LinearGradient colors={['#0F2942', '#081726']} style={styles.badgeCircle}>
+                <Image source={require('../../assets/Deep-Sea-Discovery (Assets)/logo.png')} style={styles.subLogo} resizeMode="contain" />
+              </LinearGradient>
+            </View>
+
+            <Animated.View style={sharkStyle}>
+              <Image source={require('../../assets/Deep-Sea-Discovery (Assets)/Shark Icon.png')} style={styles.sideIcon} resizeMode="contain" />
+            </Animated.View>
+          </View>
+
+          <Animated.View style={[styles.centerBlock, contentEntryStyle]}>
+            <Text style={styles.title}>
+              Deep Sea <Text style={styles.titleHighlight}>Discovery</Text>
+            </Text>
+            <Text style={styles.subtitle}>Rocket your knowledge from Grade 1 to Grade 6</Text>
           </Animated.View>
 
-          <View style={styles.mainBadgeContainer}>
-            <LinearGradient colors={['#0F2942', '#081726']} style={styles.badgeCircle}>
-              <Image source={require('../../assets/Deep-Sea-Discovery (Assets)/logo.png')} style={styles.subLogo} resizeMode="contain" />
-            </LinearGradient>
-          </View>
-
-          <Animated.View style={sharkStyle}>
-            <Image source={require('../../assets/Deep-Sea-Discovery (Assets)/Shark Icon.png')} style={styles.sideIcon} resizeMode="contain" />
+          <Animated.View style={[styles.statsRow, statsEntryStyle]}>
+            <View style={styles.statCard}>
+              <Text style={styles.statNumber}>1.5M +</Text>
+              <Text style={styles.statLabel}>Explorers</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={styles.statNumber}>10K+</Text>
+              <Text style={styles.statLabel}>Species</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={styles.statNumber}>5</Text>
+              <Text style={styles.statLabel}>Oceans</Text>
+            </View>
           </Animated.View>
-        </View>
 
-        <Animated.View style={[styles.centerBlock, contentEntryStyle]}>
-          <Text style={styles.title}>
-            Deep Sea <Text style={styles.titleHighlight}>Discovery</Text>
-          </Text>
-          <Text style={styles.subtitle}>Rocket your knowledge from Grade 1 to Grade 6</Text>
-        </Animated.View>
+          <Animated.View style={[styles.cardsWrapper, cardsEntryStyle]}>
+            <TouchableOpacity style={styles.featureCard} activeOpacity={0.8}>
+              <View style={styles.featureIconContainer}>
+                <MaterialCommunityIcons name="sail-boat" size={28} color="#7CC5FF" />
+              </View>
+              <View style={styles.featureTextContainer}>
+                <Text style={styles.featureTitle}>Live expedition crews</Text>
+                <Text style={styles.featureDesc}>Follow researchers from surface to seafloor</Text>
+              </View>
+            </TouchableOpacity>
 
-        <Animated.View style={[styles.statsRow, statsEntryStyle]}>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>1.5M +</Text>
-            <Text style={styles.statLabel}>Explorers</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>10K+</Text>
-            <Text style={styles.statLabel}>Species</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>5</Text>
-            <Text style={styles.statLabel}>Oceans</Text>
-          </View>
-        </Animated.View>
+            <TouchableOpacity style={styles.featureCard} activeOpacity={0.8}>
+              <View style={styles.featureIconContainer}>
+                <MaterialCommunityIcons name="waves" size={28} color="#7CC5FF" />
+              </View>
+              <View style={styles.featureTextContainer}>
+                <Text style={styles.featureTitle}>Share field discoveries</Text>
+                <Text style={styles.featureDesc}>Post sightings, depths, and ocean stories</Text>
+              </View>
+            </TouchableOpacity>
+          </Animated.View>
 
-        <Animated.View style={[styles.cardsWrapper, cardsEntryStyle]}>
-          <TouchableOpacity style={styles.featureCard} activeOpacity={0.8}>
-            <View style={styles.featureIconContainer}>
-              <MaterialCommunityIcons name="sail-boat" size={28} color="#7CC5FF" />
-            </View>
-            <View style={styles.featureTextContainer}>
-              <Text style={styles.featureTitle}>Live expedition crews</Text>
-              <Text style={styles.featureDesc}>Follow researchers from surface to seafloor</Text>
-            </View>
-          </TouchableOpacity>
+          <Animated.View style={[styles.buttonContainer, buttonsEntryStyle]}>
+            <TouchableOpacity style={styles.primaryButton} activeOpacity={0.85} onPress={() => router.push('./signup')}>
+              <Text style={styles.primaryButtonText}>Getting Started</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity style={styles.featureCard} activeOpacity={0.8}>
-            <View style={styles.featureIconContainer}>
-              <MaterialCommunityIcons name="waves" size={28} color="#7CC5FF" />
-            </View>
-            <View style={styles.featureTextContainer}>
-              <Text style={styles.featureTitle}>Share field discoveries</Text>
-              <Text style={styles.featureDesc}>Post sightings, depths, and ocean stories</Text>
-            </View>
-          </TouchableOpacity>
-        </Animated.View>
-
-        <Animated.View style={[styles.buttonContainer, buttonsEntryStyle]}>
-          <TouchableOpacity style={styles.primaryButton} activeOpacity={0.85} onPress={() => router.push('./signup')}>
-            <Text style={styles.primaryButtonText}>Getting Started</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.secondaryButton} activeOpacity={0.85} onPress={() => router.push('./login')}>
-            <Text style={styles.secondaryButtonText}>I already have an account</Text>
-          </TouchableOpacity>
-        </Animated.View>
-      </ScrollView>
+            <TouchableOpacity style={styles.secondaryButton} activeOpacity={0.85} onPress={() => router.push('./login')}>
+              <Text style={styles.secondaryButtonText}>I already have an account</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </ScrollView>
+      </View>
     </LinearGradient>
   );
 }
@@ -322,18 +324,23 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    zIndex: 1, // Guaranteed background placement
+    zIndex: 1,
+    elevation: 1,
   },
   bubbleContainer: {
     position: 'absolute',
     top: 0,
+  },
+  foregroundLayer: {
+    flex: 1,
+    zIndex: 10,
+    elevation: 10,
   },
   scrollContent: { 
     paddingHorizontal: 20, 
     paddingTop: 60, 
     paddingBottom: 40, 
     alignItems: 'center',
-    zIndex: 10, // Content sits strictly above background bubbles
   },
   heroRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
   sideIcon: { width: 65, height: 65, marginHorizontal: 10 },
@@ -345,11 +352,30 @@ const styles = StyleSheet.create({
   titleHighlight: { color: '#00B4D8' },
   subtitle: { fontSize: 13, color: '#A0AEC0', textAlign: 'center', marginTop: 4, marginBottom: 25, fontWeight: '500' },
   statsRow: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginBottom: 25 },
-  statCard: { flex: 1, borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)', borderRadius: 16, paddingVertical: 14, alignItems: 'center', marginHorizontal: 5, backgroundColor: 'rgba(255,255,255,0.03)' },
+  statCard: { 
+    flex: 1, 
+    borderWidth: 1, 
+    borderColor: 'rgba(255,255,255,0.25)', 
+    borderRadius: 16, 
+    paddingVertical: 14, 
+    alignItems: 'center', 
+    marginHorizontal: 5, 
+    backgroundColor: '#0F2136' 
+  },
   statNumber: { fontSize: 18, fontWeight: '700', color: '#FFFFFF' },
   statLabel: { fontSize: 12, color: '#94A3B8', marginTop: 2 },
   cardsWrapper: { width: '100%' },
-  featureCard: { flexDirection: 'row', alignItems: 'center', width: '100%', borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)', backgroundColor: 'rgba(255, 255, 255, 0.06)', borderRadius: 14, padding: 14, marginBottom: 14 },
+  featureCard: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    width: '100%', 
+    borderWidth: 1, 
+    borderColor: 'rgba(255,255,255,0.25)', 
+    backgroundColor: '#112238', 
+    borderRadius: 14, 
+    padding: 14, 
+    marginBottom: 14 
+  },
   featureIconContainer: { width: 45, height: 45, justifyContent: 'center', alignItems: 'center', marginRight: 14 },
   featureTextContainer: { flex: 1 },
   featureTitle: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
