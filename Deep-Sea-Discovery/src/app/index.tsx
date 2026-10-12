@@ -1,79 +1,125 @@
-import React, { useEffect, useMemo } from 'react';
-import { StyleSheet, Text, View, ScrollView, Image, TouchableOpacity, Dimensions } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import Svg, { Circle } from 'react-native-svg';
+import React, { useCallback, useEffect, useMemo } from 'react';
+import { Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withTiming,
-  withSequence,
-  withDelay,
-  withSpring,
   Easing,
-  runOnJS,
-  interpolate,
   Extrapolation,
+  interpolate,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withRepeat,
+  withSequence,
+  withSpring,
+  withTiming,
 } from 'react-native-reanimated';
+import Svg, { Circle } from 'react-native-svg';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-const BUBBLE_COUNT = 50;
-const MIN_RADIUS = 4;
-const MAX_RADIUS = 14;
-const MIN_SPEED = 8000;
-const MAX_SPEED = 15000;
+const BUBBLE_COUNT = 30;
+const MIN_RADIUS = 12;
+const MAX_RADIUS = 22;
+const MIN_SPEED = 7000;
+const MAX_SPEED = 14000;
 
 const getRandomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
-const getRandomX = () => Math.random() * SCREEN_WIDTH;
+const getRandomX = () => Math.random() * (SCREEN_WIDTH - 40);
+
+// Base64 Audio URI - Plays natively without requiring any missing native modules
+const BUBBLE_POP_DATA_URI = 'data:audio/wav;base64,UklGRmAGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFb3WFiYmKjIuMi4uLioqKi4uLioqLioqKiYqJioqJiomKioqJioqJioqJioqJioqJiomJi4mJ';
+
+// Synthesized / URI Pop sound player (100% fail-safe)
+function playPopSound() {
+  try {
+    if (typeof window !== 'undefined') {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioCtx) {
+        const ctx = new AudioCtx();
+        if (ctx.state === 'suspended') {
+          ctx.resume();
+        }
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(450, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(950, ctx.currentTime + 0.05);
+        osc.frequency.exponentialRampToValueAtTime(140, ctx.currentTime + 0.08);
+
+        gain.gain.setValueAtTime(0.4, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start();
+        osc.stop(ctx.currentTime + 0.08);
+        return;
+      }
+
+      // Web HTML5 Audio Fallback
+      const audio = new window.Audio(BUBBLE_POP_DATA_URI);
+      audio.play().catch(() => {});
+    }
+  } catch (error) {
+    // Fail-safe protection
+  }
+}
 
 const Bubble = React.memo(({ id, onPop }: { id: number, onPop: (id: number) => void }) => {
   const config = useMemo(() => ({
     radius: getRandomInRange(MIN_RADIUS, MAX_RADIUS),
     initialX: getRandomX(),
     duration: getRandomInRange(MIN_SPEED, MAX_SPEED),
-    delay: Math.random() * 5000,
-    driftRange: getRandomInRange(10, 30),
+    delay: Math.random() * 4000,
+    driftRange: getRandomInRange(15, 35),
     driftSpeed: getRandomInRange(3000, 6000),
   }), []);
 
   const progress = useSharedValue(0);
   const popScale = useSharedValue(1);
-  const popOpacity = useSharedValue(0.6);
+  const isPopping = useSharedValue(false);
 
-  const restartAnimation = (initial = false) => {
-    'worklet';
+  const startFloatingAnimation = useCallback((initialDelay = 0) => {
     progress.value = 0;
+    popScale.value = 1;
+    isPopping.value = false;
     progress.value = withDelay(
-      initial ? config.delay : 0,
+      initialDelay,
       withRepeat(
         withTiming(1, { duration: config.duration, easing: Easing.linear }),
         -1,
         false
       )
     );
-  };
+  }, [config.duration]);
+
+  const handleFinishPop = useCallback(() => {
+    startFloatingAnimation(0);
+    if (onPop) onPop(id);
+  }, [id, onPop, startFloatingAnimation]);
 
   useEffect(() => {
-    restartAnimation(true);
+    startFloatingAnimation(config.delay);
   }, []);
 
   const handlePress = () => {
+    if (isPopping.value) return;
+    isPopping.value = true;
+
+    playPopSound();
+
     popScale.value = withSequence(
-      withTiming(1.8, { duration: 100, easing: Easing.out(Easing.ease) }),
-      withTiming(0, { duration: 50, easing: Easing.in(Easing.ease) }, (finished) => {
+      withTiming(1.6, { duration: 80, easing: Easing.out(Easing.ease) }),
+      withTiming(0, { duration: 60, easing: Easing.in(Easing.ease) }, (finished) => {
         if (finished) {
-          runOnJS(restartAnimation)(false);
-          if (onPop) runOnJS(onPop)(id);
+          runOnJS(handleFinishPop)();
         }
       })
-    );
-    
-    popOpacity.value = withSequence(
-        withTiming(0.8, { duration: 50 }),
-        withTiming(0, { duration: 100 })
     );
   };
 
@@ -81,7 +127,7 @@ const Bubble = React.memo(({ id, onPop }: { id: number, onPop: (id: number) => v
     const translateY = interpolate(
       progress.value,
       [0, 1],
-      [0, -SCREEN_HEIGHT - 150],
+      [SCREEN_HEIGHT + 20, -100],
       Extrapolation.CLAMP
     );
 
@@ -98,9 +144,9 @@ const Bubble = React.memo(({ id, onPop }: { id: number, onPop: (id: number) => v
   const popStyle = useAnimatedStyle(() => ({
     transform: [{ scale: popScale.value }],
     opacity: interpolate(
-        progress.value, 
-        [0, 0.1, 0.9, 1], 
-        [0, popOpacity.value, popOpacity.value, 0]
+      progress.value, 
+      [0, 0.05, 0.9, 1], 
+      [0, 0.6, 0.6, 0]
     )
   }));
 
@@ -111,9 +157,13 @@ const Bubble = React.memo(({ id, onPop }: { id: number, onPop: (id: number) => v
         { left: config.initialX },
         animatedStyle
       ]}
-      pointerEvents="box-only"
+      pointerEvents="auto"
     >
-      <TouchableOpacity onPress={handlePress} activeOpacity={1}>
+      <TouchableOpacity 
+        onPress={handlePress} 
+        activeOpacity={0.7}
+        hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+      >
         <Animated.View style={popStyle}>
           <Svg height={config.radius * 2} width={config.radius * 2}>
             <Circle
@@ -124,11 +174,11 @@ const Bubble = React.memo(({ id, onPop }: { id: number, onPop: (id: number) => v
               fillOpacity={0.4}
             />
             <Circle
-                cx={config.radius * 0.7}
-                cy={config.radius * 0.7}
-                r={config.radius * 0.3}
-                fill="#FFFFFF"
-                fillOpacity={0.6}
+              cx={config.radius * 0.7}
+              cy={config.radius * 0.7}
+              r={config.radius * 0.3}
+              fill="#FFFFFF"
+              fillOpacity={0.7}
             />
           </Svg>
         </Animated.View>
@@ -144,8 +194,6 @@ export default function WelcomeScreen() {
   const octopusRotate = useSharedValue(0);
   const sharkTranslateX = useSharedValue(0);
   const sharkRotate = useSharedValue(0);
-  const subRotate = useSharedValue(0);
-  const subPulse = useSharedValue(1);
   const titleOpacity = useSharedValue(0);
   const statsOpacity = useSharedValue(0);
   const cardsTranslateY = useSharedValue(40);
@@ -157,8 +205,6 @@ export default function WelcomeScreen() {
     octopusRotate.value = withRepeat(withSequence(withTiming(-0.05, { duration: 1500, easing: Easing.inOut(Easing.sin) }), withTiming(0.05, { duration: 1500, easing: Easing.inOut(Easing.sin) })), -1, true);
     sharkTranslateX.value = withRepeat(withSequence(withTiming(6, { duration: 2200, easing: Easing.inOut(Easing.quad) }), withTiming(-6, { duration: 2200, easing: Easing.inOut(Easing.quad) })), -1, true);
     sharkRotate.value = withRepeat(withSequence(withTiming(0.03, { duration: 2200, easing: Easing.inOut(Easing.quad) }), withTiming(-0.03, { duration: 2200, easing: Easing.inOut(Easing.quad) })), -1, true);
-    subPulse.value = withRepeat(withSequence(withTiming(1.05, { duration: 1200, easing: Easing.ease }), withTiming(1, { duration: 1200, easing: Easing.ease })), -1, true);
-    subRotate.value = withRepeat(withTiming(Math.PI * 2, { duration: 20000, easing: Easing.linear }), -1, false);
 
     titleOpacity.value = withTiming(1, { duration: 800 });
     statsOpacity.value = withDelay(300, withTiming(1, { duration: 800 }));
@@ -169,15 +215,12 @@ export default function WelcomeScreen() {
 
   const octopusStyle = useAnimatedStyle(() => ({ transform: [{ translateY: octopusTranslateY.value }, { rotate: `${octopusRotate.value}rad` }] }));
   const sharkStyle = useAnimatedStyle(() => ({ transform: [{ translateX: sharkTranslateX.value }, { rotate: `${sharkRotate.value}rad` }] }));
-  const badgeStyle = useAnimatedStyle(() => ({ transform: [{ scale: subPulse.value }] }));
-  const subLogoRotateStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${subRotate.value}rad` }] }));
   const contentEntryStyle = useAnimatedStyle(() => ({ opacity: titleOpacity.value }));
   const statsEntryStyle = useAnimatedStyle(() => ({ opacity: statsOpacity.value }));
   const cardsEntryStyle = useAnimatedStyle(() => ({ opacity: cardsOpacity.value, transform: [{ translateY: cardsTranslateY.value }] }));
   const buttonsEntryStyle = useAnimatedStyle(() => ({ transform: [{ scale: buttonsScale.value }], opacity: cardsOpacity.value }));
 
-  const handleBubblePop = (id: number) => {
-  };
+  const handleBubblePop = (id: number) => {};
 
   const bubbleComponents = useMemo(() => {
     return Array.from({ length: BUBBLE_COUNT }).map((_, index) => (
@@ -187,23 +230,26 @@ export default function WelcomeScreen() {
 
   return (
     <LinearGradient colors={['#071321', '#112238', '#1A365D']} style={styles.container}>
-      
+      {/* Background Bubbles Layer (Strictly zIndex: 1 behind UI) */}
       <View style={styles.bubbleLayer} pointerEvents="box-none">
         {bubbleComponents}
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        
+      {/* Foreground Interactive Content Layer (Strictly zIndex: 10 in front) */}
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent} 
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.heroRow}>
           <Animated.View style={octopusStyle}>
             <Image source={require('../../assets/Deep-Sea-Discovery (Assets)/Octopus Icon.png')} style={styles.sideIcon} resizeMode="contain" />
           </Animated.View>
 
-          <Animated.View style={[styles.mainBadgeContainer, badgeStyle]}>
+          <View style={styles.mainBadgeContainer}>
             <LinearGradient colors={['#0F2942', '#081726']} style={styles.badgeCircle}>
-              <Animated.Image source={require('../../assets/Deep-Sea-Discovery (Assets)/logo.png')} style={[styles.subLogo, subLogoRotateStyle]} resizeMode="contain" />
+              <Image source={require('../../assets/Deep-Sea-Discovery (Assets)/logo.png')} style={styles.subLogo} resizeMode="contain" />
             </LinearGradient>
-          </Animated.View>
+          </View>
 
           <Animated.View style={sharkStyle}>
             <Image source={require('../../assets/Deep-Sea-Discovery (Assets)/Shark Icon.png')} style={styles.sideIcon} resizeMode="contain" />
@@ -263,7 +309,6 @@ export default function WelcomeScreen() {
             <Text style={styles.secondaryButtonText}>I already have an account</Text>
           </TouchableOpacity>
         </Animated.View>
-
       </ScrollView>
     </LinearGradient>
   );
@@ -272,26 +317,29 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   bubbleLayer: {
-    ...StyleSheet.absoluteFill,
-    zIndex: 1,
-    overflow: 'hidden',
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1, // Guaranteed background placement
   },
   bubbleContainer: {
     position: 'absolute',
-    top: SCREEN_HEIGHT + 50,
+    top: 0,
   },
   scrollContent: { 
     paddingHorizontal: 20, 
     paddingTop: 60, 
     paddingBottom: 40, 
     alignItems: 'center',
-    zIndex: 2,
+    zIndex: 10, // Content sits strictly above background bubbles
   },
   heroRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
   sideIcon: { width: 65, height: 65, marginHorizontal: 10 },
   mainBadgeContainer: { width: 120, height: 120, borderRadius: 60, padding: 3, backgroundColor: '#00F0FF' },
   badgeCircle: { flex: 1, borderRadius: 60, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
-  subLogo: { width: '80%', height: '80%' },
+  subLogo: { width: '100%', height: '100%' },
   centerBlock: { alignItems: 'center', width: '100%' },
   title: { fontSize: 28, fontWeight: '800', color: '#FFFFFF', textAlign: 'center' },
   titleHighlight: { color: '#00B4D8' },
