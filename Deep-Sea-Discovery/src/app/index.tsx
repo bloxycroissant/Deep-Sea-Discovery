@@ -191,35 +191,121 @@ const Bubble = React.memo(({ id, onPop }: { id: number, onPop: (id: number) => v
 export default function WelcomeScreen() {
   const router = useRouter();
 
+  // Animated Shared Values
   const octopusTranslateY = useSharedValue(0);
   const octopusRotate = useSharedValue(0);
   const sharkTranslateX = useSharedValue(0);
   const sharkRotate = useSharedValue(0);
+  
+  const logoBadgeScale = useSharedValue(0.8);
+  const logoGlowPulse = useSharedValue(1);
+
   const titleOpacity = useSharedValue(0);
+  const titleTranslateY = useSharedValue(20);
+
   const statsOpacity = useSharedValue(0);
+  const statsScale = useSharedValue(0.9);
+
   const cardsTranslateY = useSharedValue(40);
   const cardsOpacity = useSharedValue(0);
-  const buttonsScale = useSharedValue(0.9);
+
+  const primaryBtnScale = useSharedValue(1);
+  const secondaryBtnScale = useSharedValue(1);
 
   useEffect(() => {
-    octopusTranslateY.value = withRepeat(withSequence(withTiming(-8, { duration: 1800, easing: Easing.inOut(Easing.sin) }), withTiming(8, { duration: 1800, easing: Easing.inOut(Easing.sin) })), -1, true);
-    octopusRotate.value = withRepeat(withSequence(withTiming(-0.05, { duration: 1500, easing: Easing.inOut(Easing.sin) }), withTiming(0.05, { duration: 1500, easing: Easing.inOut(Easing.sin) })), -1, true);
-    sharkTranslateX.value = withRepeat(withSequence(withTiming(6, { duration: 2200, easing: Easing.inOut(Easing.quad) }), withTiming(-6, { duration: 2200, easing: Easing.inOut(Easing.quad) })), -1, true);
-    sharkRotate.value = withRepeat(withSequence(withTiming(0.03, { duration: 2200, easing: Easing.inOut(Easing.quad) }), withTiming(-0.03, { duration: 2200, easing: Easing.inOut(Easing.quad) })), -1, true);
+    // Floating animations for aquatic icons
+    octopusTranslateY.value = withRepeat(
+      withSequence(
+        withTiming(-10, { duration: 2000, easing: Easing.inOut(Easing.sin) }),
+        withTiming(10, { duration: 2000, easing: Easing.inOut(Easing.sin) })
+      ),
+      -1,
+      true
+    );
+    octopusRotate.value = withRepeat(
+      withSequence(
+        withTiming(-0.08, { duration: 1800, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0.08, { duration: 1800, easing: Easing.inOut(Easing.sin) })
+      ),
+      -1,
+      true
+    );
 
+    sharkTranslateX.value = withRepeat(
+      withSequence(
+        withTiming(8, { duration: 2400, easing: Easing.inOut(Easing.quad) }),
+        withTiming(-8, { duration: 2400, easing: Easing.inOut(Easing.quad) })
+      ),
+      -1,
+      true
+    );
+    sharkRotate.value = withRepeat(
+      withSequence(
+        withTiming(0.05, { duration: 2400, easing: Easing.inOut(Easing.quad) }),
+        withTiming(-0.05, { duration: 2400, easing: Easing.inOut(Easing.quad) })
+      ),
+      -1,
+      true
+    );
+
+    // Continuous logo glowing pulse
+    logoGlowPulse.value = withRepeat(
+      withSequence(
+        withTiming(1.1, { duration: 1600, easing: Easing.inOut(Easing.sin) }),
+        withTiming(1.0, { duration: 1600, easing: Easing.inOut(Easing.sin) })
+      ),
+      -1,
+      true
+    );
+
+    // Entrance animations sequence
+    logoBadgeScale.value = withSpring(1, { damping: 10 });
+    
     titleOpacity.value = withTiming(1, { duration: 800 });
-    statsOpacity.value = withDelay(300, withTiming(1, { duration: 800 }));
-    cardsTranslateY.value = withDelay(500, withSpring(0, { damping: 12 }));
-    cardsOpacity.value = withDelay(500, withTiming(1, { duration: 800 }));
-    buttonsScale.value = withDelay(700, withSpring(1, { damping: 10 }));
+    titleTranslateY.value = withSpring(0, { damping: 12 });
+
+    statsOpacity.value = withDelay(250, withTiming(1, { duration: 800 }));
+    statsScale.value = withDelay(250, withSpring(1, { damping: 12 }));
+
+    cardsTranslateY.value = withDelay(450, withSpring(0, { damping: 14 }));
+    cardsOpacity.value = withDelay(450, withTiming(1, { duration: 800 }));
   }, []);
 
-  const octopusStyle = useAnimatedStyle(() => ({ transform: [{ translateY: octopusTranslateY.value }, { rotate: `${octopusRotate.value}rad` }] }));
-  const sharkStyle = useAnimatedStyle(() => ({ transform: [{ translateX: sharkTranslateX.value }, { rotate: `${sharkRotate.value}rad` }] }));
-  const contentEntryStyle = useAnimatedStyle(() => ({ opacity: titleOpacity.value }));
-  const statsEntryStyle = useAnimatedStyle(() => ({ opacity: statsOpacity.value }));
-  const cardsEntryStyle = useAnimatedStyle(() => ({ opacity: cardsOpacity.value, transform: [{ translateY: cardsTranslateY.value }] }));
-  const buttonsEntryStyle = useAnimatedStyle(() => ({ transform: [{ scale: buttonsScale.value }], opacity: cardsOpacity.value }));
+  // Animated Styles
+  const octopusStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: octopusTranslateY.value }, { rotate: `${octopusRotate.value}rad` }],
+  }));
+
+  const sharkStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: sharkTranslateX.value }, { rotate: `${sharkRotate.value}rad` }],
+  }));
+
+  const logoBadgeStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: logoBadgeScale.value * logoGlowPulse.value }],
+  }));
+
+  const contentEntryStyle = useAnimatedStyle(() => ({
+    opacity: titleOpacity.value,
+    transform: [{ translateY: titleTranslateY.value }],
+  }));
+
+  const statsEntryStyle = useAnimatedStyle(() => ({
+    opacity: statsOpacity.value,
+    transform: [{ scale: statsScale.value }],
+  }));
+
+  const cardsEntryStyle = useAnimatedStyle(() => ({
+    opacity: cardsOpacity.value,
+    transform: [{ translateY: cardsTranslateY.value }],
+  }));
+
+  const primaryBtnStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: primaryBtnScale.value }],
+  }));
+
+  const secondaryBtnStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: secondaryBtnScale.value }],
+  }));
 
   const handleBubblePop = (id: number) => {};
 
@@ -228,6 +314,28 @@ export default function WelcomeScreen() {
       <Bubble key={index} id={index} onPop={handleBubblePop} />
     ));
   }, []);
+
+  const handlePressSignup = () => {
+    primaryBtnScale.value = withSequence(
+      withTiming(0.92, { duration: 90 }),
+      withTiming(1, { duration: 90 }, (finished) => {
+        if (finished) {
+          runOnJS(router.push)('./signup');
+        }
+      })
+    );
+  };
+
+  const handlePressLogin = () => {
+    secondaryBtnScale.value = withSequence(
+      withTiming(0.92, { duration: 90 }),
+      withTiming(1, { duration: 90 }, (finished) => {
+        if (finished) {
+          runOnJS(router.push)('./login');
+        }
+      })
+    );
+  };
 
   return (
     <LinearGradient colors={['#071321', '#112238', '#1A365D']} style={styles.container}>
@@ -246,11 +354,11 @@ export default function WelcomeScreen() {
               <Image source={require('../../assets/Deep-Sea-Discovery (Assets)/Octopus Icon.png')} style={styles.sideIcon} resizeMode="contain" />
             </Animated.View>
 
-            <View style={styles.mainBadgeContainer}>
+            <Animated.View style={[styles.mainBadgeContainer, logoBadgeStyle]}>
               <LinearGradient colors={['#0F2942', '#081726']} style={styles.badgeCircle}>
                 <Image source={require('../../assets/Deep-Sea-Discovery (Assets)/logo.png')} style={styles.subLogo} resizeMode="contain" />
               </LinearGradient>
-            </View>
+            </Animated.View>
 
             <Animated.View style={sharkStyle}>
               <Image source={require('../../assets/Deep-Sea-Discovery (Assets)/Shark Icon.png')} style={styles.sideIcon} resizeMode="contain" />
@@ -301,15 +409,19 @@ export default function WelcomeScreen() {
             </TouchableOpacity>
           </Animated.View>
 
-          <Animated.View style={[styles.buttonContainer, buttonsEntryStyle]}>
-            <TouchableOpacity style={styles.primaryButton} activeOpacity={0.85} onPress={() => router.push('./signup')}>
-              <Text style={styles.primaryButtonText}>Getting Started</Text>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity activeOpacity={0.85} onPress={handlePressSignup}>
+              <Animated.View style={[styles.primaryButton, primaryBtnStyle]}>
+                <Text style={styles.primaryButtonText}>Getting Started</Text>
+              </Animated.View>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.secondaryButton} activeOpacity={0.85} onPress={() => router.push('./login')}>
-              <Text style={styles.secondaryButtonText}>I already have an account</Text>
+            <TouchableOpacity activeOpacity={0.85} onPress={handlePressLogin}>
+              <Animated.View style={[styles.secondaryButton, secondaryBtnStyle]}>
+                <Text style={styles.secondaryButtonText}>I already have an account</Text>
+              </Animated.View>
             </TouchableOpacity>
-          </Animated.View>
+          </View>
         </ScrollView>
       </View>
     </LinearGradient>

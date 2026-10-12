@@ -198,7 +198,6 @@ const Bubble = React.memo(({ id, onPop }: { id: number; onPop: (id: number) => v
 
 export default function HomeScreen() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState('Home');
   const [isLiked, setIsLiked] = useState(true);
   const [isSaved, setIsSaved] = useState(false);
 
@@ -228,33 +227,27 @@ export default function HomeScreen() {
       <View style={styles.foregroundLayer} pointerEvents="box-none">
         {/* Top Navbar */}
         <View style={styles.topNav}>
-          <TouchableOpacity style={styles.navItem} onPress={() => setActiveTab('Home')}>
-            <Ionicons
-              name={activeTab === 'Home' ? 'home' : 'home-outline'}
-              size={24}
-              color={activeTab === 'Home' ? '#00B4D8' : '#8A99AD'}
-            />
-            <Text style={[styles.navText, activeTab === 'Home' && styles.activeNavText]}>
-              Home
-            </Text>
+          <TouchableOpacity style={styles.navItem} onPress={() => router.push('./explore')}>
+            <Ionicons name="home" size={24} color="#00B4D8" />
+            <Text style={[styles.navText, styles.activeNavText]}>Home</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.navItem} onPress={() => setActiveTab('Discover')}>
+          <TouchableOpacity style={styles.navItem} onPress={() => router.push('./discover')}>
             <Feather name="search" size={24} color="#8A99AD" />
             <Text style={styles.navText}>Discover</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.navItem} onPress={() => setActiveTab('Crews')}>
+          <TouchableOpacity style={styles.navItem} onPress={() => router.push('./crews')}>
             <MaterialCommunityIcons name="sail-boat" size={24} color="#8A99AD" />
             <Text style={styles.navText}>Crews</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.navItem} onPress={() => setActiveTab('Signals')}>
+          <TouchableOpacity style={styles.navItem} onPress={() => router.push('./signals')}>
             <Ionicons name="chatbox-outline" size={24} color="#8A99AD" />
             <Text style={styles.navText}>Signals</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.navItem} onPress={() => setActiveTab('Profile')}>
+          <TouchableOpacity style={styles.navItem} onPress={() => router.push('./profile')}>
             <Ionicons name="person-outline" size={24} color="#8A99AD" />
             <Text style={styles.navText}>Profile</Text>
           </TouchableOpacity>
@@ -321,7 +314,6 @@ export default function HomeScreen() {
 
           {/* Feed Card */}
           <View style={styles.feedCard}>
-            {/* Card Header */}
             <View style={styles.cardHeader}>
               <View style={styles.crewAvatarContainer}>
                 <Text style={styles.crewAvatarText}>ox</Text>
@@ -333,10 +325,8 @@ export default function HomeScreen() {
               </View>
             </View>
 
-            {/* Card Body Text */}
             <Text style={styles.postText}>Blue water with coral reefs complete.</Text>
 
-            {/* Post Image Container */}
             <View style={styles.imageWrapper}>
               <Image
                 source={{
@@ -346,19 +336,16 @@ export default function HomeScreen() {
                 resizeMode="cover"
               />
 
-              {/* Location Tag */}
               <View style={styles.locationBadge}>
                 <Ionicons name="location-outline" size={14} color="#FFFFFF" />
                 <Text style={styles.locationText}>Coral Sea</Text>
               </View>
 
-              {/* Depth Badge */}
               <View style={styles.depthBadge}>
                 <Text style={styles.depthText}>42 M</Text>
               </View>
             </View>
 
-            {/* Post Stats */}
             <View style={styles.statsRow}>
               <View style={styles.appreciationGroup}>
                 <Ionicons name="heart" size={16} color="#FF5252" />
@@ -367,7 +354,6 @@ export default function HomeScreen() {
               <Text style={styles.fieldNotesText}>12 field notes</Text>
             </View>
 
-            {/* Post Actions Row */}
             <View style={styles.actionsRow}>
               <View style={styles.leftActions}>
                 <TouchableOpacity

@@ -8,6 +8,7 @@ import {
   TextInput,
   TouchableOpacity,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -202,6 +203,17 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [agreeTerms, setAgreeTerms] = useState(true);
 
+  const handleLoginPress = () => {
+    if (!email.trim() || !password.trim()) {
+      Alert.alert(
+        'Incomplete Form',
+        'Please enter your email and password to log in.'
+      );
+      return;
+    }
+    router.push('./explore');
+  };
+
   const handleBubblePop = (id: number) => {};
 
   const bubbleComponents = useMemo(() => {
@@ -270,7 +282,7 @@ export default function LoginScreen() {
             <TouchableOpacity
               style={styles.loginButton}
               activeOpacity={0.85}
-              onPress={() => router.push('./explore')}
+              onPress={handleLoginPress}
             >
               <Text style={styles.loginButtonText}>Log In</Text>
             </TouchableOpacity>

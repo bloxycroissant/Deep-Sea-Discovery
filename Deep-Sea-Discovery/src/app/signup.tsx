@@ -8,6 +8,7 @@ import {
   ScrollView,
   Image,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -225,16 +226,21 @@ export default function SignupScreen() {
     formSlide.value = withSpring(0, { damping: 15 });
   }, []);
 
-  const navigateToLogin = useCallback(() => {
-    router.push('./login');
+  const navigateToHome = useCallback(() => {
+    router.push('./explore');
   }, [router]);
 
   const handleStartLearning = () => {
+    if (!fullName.trim() || !email.trim() || !password.trim()) {
+      Alert.alert('Incomplete Form', 'Please fill in all fields (Full Name, Email, and Password) before proceeding.');
+      return;
+    }
+
     buttonScale.value = withSequence(
       withTiming(0.92, { duration: 100 }),
       withTiming(1, { duration: 100 }, (finished) => {
         if (finished) {
-          runOnJS(navigateToLogin)();
+          runOnJS(navigateToHome)();
         }
       })
     );
