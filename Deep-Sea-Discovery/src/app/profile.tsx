@@ -1,30 +1,29 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  ScrollView,
-  Image,
-  TouchableOpacity,
-  Dimensions,
-  ImageBackground,
-} from 'react-native';
+import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import Svg, { Circle } from 'react-native-svg';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  Dimensions,
+  Image,
+  ImageBackground,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withTiming,
-  withSequence,
-  withSpring,
   Easing,
-  runOnJS,
-  interpolate,
   Extrapolation,
+  interpolate,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
 } from 'react-native-reanimated';
+import Svg, { Circle } from 'react-native-svg';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -243,46 +242,70 @@ export default function ProfileScreen() {
         </View>
 
         <Animated.View style={[{ flex: 1 }, logoutAnimStyle]} pointerEvents="box-none">
-          <ScrollView contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false} pointerEvents="box-none">
-            <ImageBackground source={{ uri: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?q=80&w=1000&auto=format&fit=crop' }} style={styles.profileHeaderBg}>
+          <ScrollView contentContainerStyle={{ paddingBottom: 50 }} showsVerticalScrollIndicator={false} pointerEvents="box-none">
+            {/* Banner Full Width */}
+            <ImageBackground
+              source={{ uri: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?q=80&w=1000&auto=format&fit=crop' }}
+              style={styles.profileHeaderBg}
+              resizeMode="cover"
+            >
               <TouchableOpacity style={styles.editBtn} activeOpacity={0.8}>
                 <Feather name="edit-2" size={16} color="#FFFFFF" />
               </TouchableOpacity>
             </ImageBackground>
 
             <View style={styles.profileBody}>
-              <View style={styles.profileAvatarBorder}>
-                <View style={styles.profileAvatarCircle}>
-                  <Text style={styles.profileAvatarText}>BC</Text>
+              {/* Avatar position */}
+              <View style={styles.avatarRow}>
+                <View style={styles.profileAvatarBorder}>
+                  <View style={styles.profileAvatarCircle}>
+                    <Text style={styles.profileAvatarText}>BC</Text>
+                  </View>
                 </View>
               </View>
 
               <View style={styles.profileNameRow}>
-                <Text style={styles.profileName}>BloxyCroissant</Text>
-                <View style={styles.explorerBadge}><Text style={styles.explorerBadgeText}>Explorer</Text></View>
+                <View style={styles.nameGroup}>
+                  <Text style={styles.profileName}>BloxyCroissant</Text>
+                  <View style={styles.explorerBadge}>
+                    <Text style={styles.explorerBadgeText}>Explorer</Text>
+                  </View>
+                </View>
+
                 <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
                   <Text style={styles.logoutBtnText}>Logout</Text>
                 </TouchableOpacity>
               </View>
 
-              <Text style={styles.profileHandle}>@bloxycroissant Student oceanographer</Text>
-              <Text style={styles.profileBio}>Learning one dive at a time. Fascinated by the midnight zone and everything that glows</Text>
+              <Text style={styles.profileHandle}>
+                @bloxycroissant <Text style={styles.handleRole}>Student oceanographer</Text>
+              </Text>
+              <Text style={styles.profileBio}>
+                Learning one dive at a time. Fascinated by the midnight zone and everything that glows
+              </Text>
               <Text style={styles.profileLoc}>📍 Cebu, Philippines</Text>
 
+              {/* Stats Counters */}
               <View style={styles.statsCounterRow}>
                 <Text style={styles.statCounter}><Text style={styles.statBold}>28</Text> logs</Text>
                 <Text style={styles.statCounter}><Text style={styles.statBold}>1.4K</Text> followers</Text>
                 <Text style={styles.statCounter}><Text style={styles.statBold}>318</Text> following</Text>
               </View>
 
+              {/* Tabs */}
               <View style={styles.profileTabRow}>
                 {['Field logs', 'Saved', 'Species'].map((tab) => (
-                  <TouchableOpacity key={tab} style={[styles.profileTab, profileTab === tab && styles.profileTabActive]} onPress={() => setProfileTab(tab)}>
+                  <TouchableOpacity
+                    key={tab}
+                    style={[styles.profileTab, profileTab === tab && styles.profileTabActive]}
+                    onPress={() => setProfileTab(tab)}
+                  >
                     <Text style={[styles.profileTabText, profileTab === tab && styles.profileTabTextActive]}>{tab}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
+              {/* Gallery Grid */}
               <View style={styles.galleryGrid}>
                 <Image source={{ uri: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?q=80&w=400&auto=format&fit=crop' }} style={styles.galleryImg} />
                 <Image source={{ uri: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=400&auto=format&fit=crop' }} style={styles.galleryImg} />
@@ -314,25 +337,28 @@ const styles = StyleSheet.create({
   navItem: { alignItems: 'center', justifyContent: 'center' },
   navText: { fontSize: 11, color: '#8A99AD', marginTop: 4, fontWeight: '600' },
   activeNavText: { color: '#00B4D8' },
-  profileHeaderBg: { width: '100%', height: 160, justifyContent: 'flex-end', alignItems: 'flex-end', padding: 16 },
+  profileHeaderBg: { width: '100%', height: 180, justifyContent: 'flex-end', alignItems: 'flex-end', padding: 16 },
   editBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
-  profileBody: { paddingHorizontal: 16, marginTop: -30 },
-  profileAvatarBorder: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#071321', padding: 4, marginBottom: 12 },
+  profileBody: { paddingHorizontal: 16 },
+  avatarRow: { marginTop: -40, marginBottom: 8 },
+  profileAvatarBorder: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#071321', padding: 4 },
   profileAvatarCircle: { flex: 1, borderRadius: 40, backgroundColor: '#1B4965', justifyContent: 'center', alignItems: 'center' },
   profileAvatarText: { fontSize: 24, fontWeight: '800', color: '#FFFFFF' },
-  profileNameRow: { flexDirection: 'row', alignItems: 'center' },
+  profileNameRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
+  nameGroup: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', flex: 1 },
   profileName: { fontSize: 20, fontWeight: '800', color: '#FFFFFF', marginRight: 8 },
-  explorerBadge: { backgroundColor: '#103A5C', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, marginRight: 10 },
+  explorerBadge: { backgroundColor: '#103A5C', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   explorerBadgeText: { color: '#00F0FF', fontSize: 10, fontWeight: '700' },
-  logoutBtn: { backgroundColor: '#8B0000', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, marginLeft: 'auto' },
-  logoutBtnText: { color: '#FFFFFF', fontSize: 10, fontWeight: '700' },
-  profileHandle: { fontSize: 12, color: '#8A99AD', marginTop: 4 },
-  profileBio: { fontSize: 12, color: '#E0E6ED', marginTop: 8, lineHeight: 18 },
-  profileLoc: { fontSize: 11, color: '#8A99AD', marginTop: 8 },
-  statsCounterRow: { flexDirection: 'row', marginTop: 14, marginBottom: 16 },
-  statCounter: { fontSize: 12, color: '#8A99AD', marginRight: 16 },
+  logoutBtn: { backgroundColor: '#B91C1C', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 },
+  logoutBtnText: { color: '#FFFFFF', fontSize: 11, fontWeight: '700' },
+  profileHandle: { fontSize: 12, color: '#8A99AD', marginBottom: 8 },
+  handleRole: { color: '#A0AEC0' },
+  profileBio: { fontSize: 12, color: '#E0E6ED', lineHeight: 18, marginBottom: 8 },
+  profileLoc: { fontSize: 11, color: '#8A99AD', marginBottom: 14 },
+  statsCounterRow: { flexDirection: 'row', marginBottom: 18 },
+  statCounter: { fontSize: 13, color: '#8A99AD', marginRight: 18 },
   statBold: { color: '#FFFFFF', fontWeight: '800' },
-  profileTabRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)', marginBottom: 16 },
+  profileTabRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.1)', marginBottom: 16 },
   profileTab: { paddingVertical: 10, marginRight: 24 },
   profileTabActive: { borderBottomWidth: 2, borderBottomColor: '#00B4D8' },
   profileTabText: { fontSize: 13, color: '#8A99AD' },
